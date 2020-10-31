@@ -10,7 +10,7 @@ assigns a label `road=1, background=0` to each pixel.
 Submission system environment setup:
 
 1. The dataset is available from the 
-[CrowdAI page](https://www.aicrowd.com/challenges/epfl-ml-road-segmentation).
+[here](281e7599-7024-4d7e-a95d-e1af53d3e8c0_test_set_images.zip).
 
 2. Obtain the python notebook `segment_aerial_images.ipynb` from this github 
 folder, to see example code on how to extract the images as well as 
