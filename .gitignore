@@ -5,7 +5,9 @@ __pycache__/
 
 # C extensions
 *.so
-
+# Dont' push data:
+data/*
+*.csv
 # Distribution / packaging
 .Python
 build/
