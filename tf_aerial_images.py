@@ -14,23 +14,22 @@ import sys
 import urllib
 import matplotlib.image as mpimg
 from PIL import Image
-
 import code
-
 import tensorflow.python.platform
-
 import numpy
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+import source.helper_functions.mask_to_submission as submission_maker
 
 NUM_CHANNELS = 3  # RGB images
 PIXEL_DEPTH = 255
 NUM_LABELS = 2
-TRAINING_SIZE = 20
-VALIDATION_SIZE = 5  # Size of the validation set.
+TEST_SIZE = 50
+TRAINING_SIZE = 100
+VALIDATION_SIZE = 20  # Size of the validation set.
 SEED = 66478  # Set to None for random seed.
 BATCH_SIZE = 16  # 64
 NUM_EPOCHS = 100
-RESTORE_MODEL = False  # If True, restore existing model instead of training a new one
+RESTORE_MODEL = True  # If True, restore existing model instead of training a new one
 RECORDING_STEP = 0
 
 # Set image patch size in pixels
@@ -60,13 +59,17 @@ def img_crop(im, w, h):
     return list_patches
 
 
-def extract_data(filename, num_images):
+def extract_data(filename, num_images, is_training = True):
     """Extract the images into a 4D tensor [image index, y, x, channels].
     Values are rescaled from [0, 255] down to [-0.5, 0.5].
     """
     imgs = []
     for i in range(1, num_images+1):
-        imageid = "satImage_%.3d" % i
+        imageid = ""
+        if(is_training):
+            imageid = "satImage_%.3d" % i
+        else:
+            imageid = "test_%d/test_%d" % (i, i)
         image_filename = filename + imageid + ".png"
         if os.path.isfile(image_filename):
             print('Loading ' + image_filename)
@@ -198,7 +201,9 @@ def make_img_overlay(img, predicted_img):
 
 def main(argv=None):  # pylint: disable=unused-argument
 
-    data_dir = 'training/'
+    tf.disable_eager_execution()
+
+    data_dir = 'data/training/'
     train_data_filename = data_dir + 'images/'
     train_labels_filename = data_dir + 'groundtruth/' 
 
@@ -307,21 +312,39 @@ def main(argv=None):  # pylint: disable=unused-argument
         return img_prediction
 
     # Get a concatenation of the prediction and groundtruth for given input file
-    def get_prediction_with_groundtruth(filename, image_idx):
+    def get_prediction_with_groundtruth(filename, image_idx, is_training = True):
 
-        imageid = "satImage_%.3d" % image_idx
+        imageid = ""
+        if is_training:
+            imageid = "satImage_%.3d" % image_idx
+        else:
+            imageid = "test_%d/test_%d" % (image_idx, image_idx)
         image_filename = filename + imageid + ".png"
         img = mpimg.imread(image_filename)
 
         img_prediction = get_prediction(img)
         cimg = concatenate_images(img, img_prediction)
 
-        return cimg
+        return cimg    
+
+    def get_groundtruth(filename, image_idx, is_training = True):
+        imageid = ""
+        if is_training:
+            imageid = "satImage_%.3d" % image_idx
+        else:
+            imageid = "test_%d/test_%d" % (image_idx, image_idx)
+        image_filename = filename + imageid + ".png"
+        img = mpimg.imread(image_filename)
+       # blank = Image.new("L", (0, 0))
+        return get_prediction(img)
 
     # Get prediction overlaid on the original image for given input file
-    def get_prediction_with_overlay(filename, image_idx):
-
-        imageid = "satImage_%.3d" % image_idx
+    def get_prediction_with_overlay(filename, image_idx, is_training = True):
+        imageid = ""
+        if is_training:
+            imageid = "satImage_%.3d" % image_idx
+        else:
+            imageid = "test_%d/test_%d" % (image_idx, image_idx)
         image_filename = filename + imageid + ".png"
         img = mpimg.imread(image_filename)
 
@@ -514,15 +537,28 @@ def main(argv=None):  # pylint: disable=unused-argument
                 save_path = saver.save(s, FLAGS.train_dir + "/model.ckpt")
                 print("Model saved in file: %s" % save_path)
 
-        print("Running prediction on training set")
-        prediction_training_dir = "predictions_training/"
-        if not os.path.isdir(prediction_training_dir):
-            os.mkdir(prediction_training_dir)
-        for i in range(1, TRAINING_SIZE + 1):
-            pimg = get_prediction_with_groundtruth(train_data_filename, i)
-            Image.fromarray(pimg).save(prediction_training_dir + "prediction_" + str(i) + ".png")
-            oimg = get_prediction_with_overlay(train_data_filename, i)
-            oimg.save(prediction_training_dir + "overlay_" + str(i) + ".png")       
+        # print("Running prediction on training set")
+        # prediction_training_dir = "data/predictions_training/"
+        # if not os.path.isdir(prediction_training_dir):
+        #     os.mkdir(prediction_training_dir)
+        # for i in range(1, TRAINING_SIZE + 1):
+        #     pimg = get_prediction_with_groundtruth(train_data_filename, i)
+        #     Image.fromarray(pimg).save(prediction_training_dir + "prediction_" + str(i) + ".png")
+        #     oimg = get_prediction_with_overlay(train_data_filename, i)
+        #     oimg.save(prediction_training_dir + "overlay_" + str(i) + ".png") 
+       
+        print("Running prediction on test set")
+        test_dir = "data/test_set_images/" 
+        prediction_test_dir = "data/predictions_test/" 
+        if not os.path.isdir(prediction_test_dir):
+            os.mkdir(prediction_test_dir)  
+        for i in range(1, TEST_SIZE + 1):
+            pimg = get_prediction_with_groundtruth(test_dir, i, False)
+            Image.fromarray(pimg).save(prediction_test_dir + "prediction_test_" + str(i) + ".png")
+            mask = img_float_to_uint8(get_groundtruth(test_dir, i, False))
+            Image.fromarray(mask).save(prediction_test_dir + "mask_" + str(i) + ".png")
+            #masks_filenames.append(prediction_test_dir + "mask_" + str(i) + ".png")
+        #submission_maker.mask_to_submission("submit.csv", masks_filenames)
 
 
 if __name__ == '__main__':
