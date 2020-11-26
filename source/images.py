@@ -65,7 +65,7 @@ def img_crop(im, w, h):
             list_patches.append(im_patch)
     return list_patches
 
-def extract_data(filename, num_images, is_training = True):
+def load_training(filename, num_images, is_training = True):
     """Extract the images into a 4D tensor [image index, y, x, channels].
     Values are rescaled from [0, 255] down to [-0.5, 0.5].
     """
@@ -84,19 +84,9 @@ def extract_data(filename, num_images, is_training = True):
         else:
             print('File ' + image_filename + ' does not exist')
 
-    num_images = len(imgs)
-    IMG_WIDTH = imgs[0].shape[0]
-    IMG_HEIGHT = imgs[0].shape[1]
-    N_PATCHES_PER_IMAGE = (IMG_WIDTH/cst.IMG_PATCH_SIZE)*(IMG_HEIGHT/cst.IMG_PATCH_SIZE)
+    return numpy.asarray(imgs)
 
-    img_patches = [img_crop(imgs[i], cst.IMG_PATCH_SIZE, cst.IMG_PATCH_SIZE) for i in range(num_images)]
-    data = [img_patches[i][j] for i in range(len(img_patches)) for j in range(len(img_patches[i]))]
-
-    return numpy.asarray(data)
-
-# Extract label images
-def extract_labels(filename, num_images):
-    """Extract the labels into a 1-hot matrix [image index, label index]."""
+def load_groundtruths(filename, num_images):
     gt_imgs = []
     for i in range(1, num_images + 1):
         imageid = "satImage_%.3d" % i
@@ -107,11 +97,7 @@ def extract_labels(filename, num_images):
             gt_imgs.append(img)
         else:
             print('File ' + image_filename + ' does not exist')
+    labels = numpy.asarray(gt_imgs)
+    labels = numpy.around(labels)
 
-    num_images = len(gt_imgs)
-    gt_patches = [img_crop(gt_imgs[i], cst.IMG_PATCH_SIZE, cst.IMG_PATCH_SIZE) for i in range(num_images)]
-    data = numpy.asarray([gt_patches[i][j] for i in range(len(gt_patches)) for j in range(len(gt_patches[i]))])
-    labels = numpy.asarray([value_to_class(numpy.mean(data[i])) for i in range(len(data))])
-
-    # Convert to dense 1-hot representation.
-    return labels.astype(numpy.float32)
+    return labels
