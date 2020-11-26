@@ -22,7 +22,6 @@ import tensorflow.keras.layers as layers
 import source.mask_to_submission as submission_maker
 import source.constants as cst
 import source.images as images
-import source.neuralnetwork as unet
 
 def error_rate(predictions, labels):
     """Return the error rate based on dense predictions and 1-hot labels."""
@@ -193,7 +192,7 @@ def train_unet(argv=None):  # pylint: disable=unused-argument
     unet.summary()
     # unet.compile(optimizer=Adam(lr=1e-5), loss=dice_coef_loss, metrics=[dice_coef])
     
-    unet.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    unet.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     model_checkpoint = tf.keras.callbacks.ModelCheckpoint('unet.h5', monitor='val_loss', save_best_only=True)
 
     margin = int((train_labels.shape[1] - conv10.shape[1]) / 2)
