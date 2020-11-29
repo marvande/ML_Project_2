@@ -7,6 +7,7 @@ from PIL import Image
 import code
 import numpy
 import source.constants as cst
+import scipy.ndimage as scp
 
 def img_float_to_uint8(img):
     rimg = img - numpy.min(img)
@@ -65,17 +66,10 @@ def img_crop(im, w, h):
             list_patches.append(im_patch)
     return list_patches
 
-def load_training(filename, num_images, is_training = True):
-    """Extract the images into a 4D tensor [image index, y, x, channels].
-    Values are rescaled from [0, 255] down to [-0.5, 0.5].
-    """
+def load_training(filename, num_images):
     imgs = []
     for i in range(1, num_images+1):
-        imageid = ""
-        if(is_training):
-            imageid = "satImage_%.3d" % i
-        else:
-            imageid = "test_%d/test_%d" % (i, i)
+        imageid = "satImage_%.3d" % i
         image_filename = filename + imageid + ".png"
         if os.path.isfile(image_filename):
             print('Loading ' + image_filename)
@@ -83,8 +77,44 @@ def load_training(filename, num_images, is_training = True):
             imgs.append(img)
         else:
             print('File ' + image_filename + ' does not exist')
+    data = numpy.asarray(imgs).astype('float32')
+    mean = numpy.mean(data)
+    std = numpy.std(data)
+    data -= mean
+    data /= std
+    result = numpy.concatenate((data[:, 0:200, 0:200, :], data[:, 0:200, 200:400, :]))
+    result = numpy.concatenate((result, data[:, 200:400, 0:200, :]))
+    result = numpy.concatenate((result, data[:, 200:400, 200:400, :]))
+    rotated = numpy.rot90(result, axes=(1, 2))
+    result = numpy.concatenate((result, rotated))
+    rotated = numpy.rot90(rotated, axes=(1, 2))
+    result = numpy.concatenate((result, rotated))
+    rotated = numpy.rot90(rotated, axes=(1, 2))
+    result = numpy.concatenate((result, rotated))
 
-    return numpy.asarray(imgs)
+    rotated = scp.rotate(data, 45, axes=(1, 2))
+    result = numpy.concatenate((result, rotated[:, 183:383, 183:383, :]))
+    rotated = scp.rotate(data, 135, axes=(1, 2))
+    result = numpy.concatenate((result, rotated[:, 183:383, 183:383, :]))
+    rotated = scp.rotate(data, 225, axes=(1, 2))
+    result = numpy.concatenate((result, rotated[:, 183:383, 183:383, :]))
+    rotated = scp.rotate(data, 315, axes=(1, 2))
+    result = numpy.concatenate((result, rotated[:, 183:383, 183:383, :]))
+
+    print(result.shape)
+
+    # rotated = scp.rotate(unrotated, 45, axes=(1, 2), mode="reflect")
+    # result = numpy.concatenate((result, rotated[:, 41:241, 41:241, :]))
+    # rotated = scp.rotate(unrotated, 135, axes=(1, 2), mode="reflect")
+    # result = numpy.concatenate((result, rotated[:, 41:241, 41:241, :]))
+    # rotated = scp.rotate(unrotated, 225, axes=(1, 2), mode="reflect")
+    # result = numpy.concatenate((result, rotated[:, 41:241, 41:241, :]))
+    # rotated = scp.rotate(unrotated, 315, axes=(1, 2), mode="reflect")
+    # result = numpy.concatenate((result, rotated[:, 41:241, 41:241, :]))
+
+    print("DATA SHAPE ", result.shape)
+
+    return result
 
 def load_groundtruths(filename, num_images):
     gt_imgs = []
@@ -99,5 +129,72 @@ def load_groundtruths(filename, num_images):
             print('File ' + image_filename + ' does not exist')
     labels = numpy.asarray(gt_imgs)
     labels = numpy.around(labels)
+    result = numpy.concatenate((labels[:, 0:200, 0:200], labels[:, 0:200, 200:400]))
+    result = numpy.concatenate((result, labels[:, 200:400, 0:200]))
+    result = numpy.concatenate((result, labels[:, 200:400, 200:400]))
+    rotated = numpy.rot90(result, axes=(1, 2))
+    result = numpy.concatenate((result, rotated))
+    rotated = numpy.rot90(rotated, axes=(1, 2))
+    result = numpy.concatenate((result, rotated))
+    rotated = numpy.rot90(rotated, axes=(1, 2))
+    result = numpy.concatenate((result, rotated))
 
-    return labels
+    rotated = scp.rotate(labels, 45, axes=(1, 2))
+    result = numpy.concatenate((result, rotated[:, 183:383, 183:383]))
+    rotated = scp.rotate(labels, 135, axes=(1, 2))
+    result = numpy.concatenate((result, rotated[:, 183:383, 183:383]))
+    rotated = scp.rotate(labels, 225, axes=(1, 2))
+    result = numpy.concatenate((result, rotated[:, 183:383, 183:383]))
+    rotated = scp.rotate(labels, 315, axes=(1, 2))
+    result = numpy.concatenate((result, rotated[:, 183:383, 183:383]))
+
+    # rotated = scp.rotate(result, 45, axes=(1, 2), mode="reflect")
+    # result = numpy.concatenate((result, rotated[:, 41:241, 41:241]))
+    # rotated = scp.rotate(unrotated, 135, axes=(1, 2), mode="reflect")
+    # result = numpy.concatenate((result, rotated[:, 41:241, 41:241]))
+    # rotated = scp.rotate(unrotated, 225, axes=(1, 2), mode="reflect")
+    # result = numpy.concatenate((result, rotated[:, 41:241, 41:241]))
+    # rotated = scp.rotate(unrotated, 315, axes=(1, 2), mode="reflect")
+    # result = numpy.concatenate((result, rotated[:, 41:241, 41:241]))
+    print("LABEL SHAPE ", result.shape)
+
+    return result.astype('float32')
+
+def load_test(filename, num_images, input_size, output_size):
+    imgs = []
+    for i in range(1, num_images + 1):
+        imageid = "test_%d/test_%d" % (i, i)
+        image_filename = filename + imageid + ".png"
+        if os.path.isfile(image_filename):
+            print('Loading ' + image_filename)
+            img = mpimg.imread(image_filename)
+            imgs.append(img)
+        else:
+            print('File ' + image_filename + ' does not exist')
+    data = numpy.asarray(imgs).astype('float32')
+    mean = numpy.mean(data)
+    std = numpy.std(data)
+    data -= mean
+    data /= std
+
+    expanded = []
+    original_size = data.shape[1]
+
+    for k in range(num_images):
+        img = data[k]
+        hflip = numpy.fliplr(img)
+        vflip = numpy.flipud(img)
+        hvflip = numpy.flipud(hflip)
+        flipped_border_line = numpy.concatenate((hvflip, vflip, hvflip), axis = 1)
+        flipped_middle_line = numpy.concatenate((hflip, img, hflip), axis = 1)
+        all_flipped = numpy.concatenate((flipped_border_line, flipped_middle_line, flipped_border_line))
+        for i in range(0, original_size, output_size):
+            for j in range(0, original_size, output_size):
+                starti = original_size + i - int((input_size - output_size) / 2)
+                endi = starti + input_size
+                startj = original_size + j - int((input_size - output_size) / 2)
+                endj = startj + input_size
+                patch = all_flipped[starti:endi, startj:endj, :]
+                expanded.append(patch[..., numpy.newaxis])
+
+    return numpy.asarray(expanded)
