@@ -77,7 +77,7 @@ def load_training(filename, num_images):
             imgs.append(img)
         else:
             print('File ' + image_filename + ' does not exist')
-    data = numpy.asarray(imgs).astype('float32')
+    data = numpy.asarray(imgs).astype('float64')
     mean = numpy.mean(data)
     std = numpy.std(data)
     data -= mean
@@ -87,12 +87,13 @@ def load_training(filename, num_images):
     result = numpy.concatenate((result, data[:, 200:400, 200:400, :]))
     rotated = numpy.rot90(result, axes=(1, 2))
     result = numpy.concatenate((result, rotated))
-    rotated = numpy.rot90(rotated, axes=(1, 2))
-    result = numpy.concatenate((result, rotated))
-    rotated = numpy.rot90(rotated, axes=(1, 2))
-    result = numpy.concatenate((result, rotated))
+    # rotated = numpy.rot90(rotated, axes=(1, 2))
+    # # result = numpy.concatenate((result, rotated))
+    # rotated = numpy.rot90(rotated, axes=(1, 2))
+    # result = numpy.concatenate((result, rotated))
 
     rotated = scp.rotate(data, 45, axes=(1, 2))
+    numpy.set_printoptions(threshold=sys.maxsize)
     result = numpy.concatenate((result, rotated[:, 183:383, 183:383, :]))
     rotated = scp.rotate(data, 135, axes=(1, 2))
     result = numpy.concatenate((result, rotated[:, 183:383, 183:383, :]))
@@ -100,17 +101,6 @@ def load_training(filename, num_images):
     result = numpy.concatenate((result, rotated[:, 183:383, 183:383, :]))
     rotated = scp.rotate(data, 315, axes=(1, 2))
     result = numpy.concatenate((result, rotated[:, 183:383, 183:383, :]))
-
-    print(result.shape)
-
-    # rotated = scp.rotate(unrotated, 45, axes=(1, 2), mode="reflect")
-    # result = numpy.concatenate((result, rotated[:, 41:241, 41:241, :]))
-    # rotated = scp.rotate(unrotated, 135, axes=(1, 2), mode="reflect")
-    # result = numpy.concatenate((result, rotated[:, 41:241, 41:241, :]))
-    # rotated = scp.rotate(unrotated, 225, axes=(1, 2), mode="reflect")
-    # result = numpy.concatenate((result, rotated[:, 41:241, 41:241, :]))
-    # rotated = scp.rotate(unrotated, 315, axes=(1, 2), mode="reflect")
-    # result = numpy.concatenate((result, rotated[:, 41:241, 41:241, :]))
 
     print("DATA SHAPE ", result.shape)
 
@@ -134,31 +124,23 @@ def load_groundtruths(filename, num_images):
     result = numpy.concatenate((result, labels[:, 200:400, 200:400]))
     rotated = numpy.rot90(result, axes=(1, 2))
     result = numpy.concatenate((result, rotated))
-    rotated = numpy.rot90(rotated, axes=(1, 2))
-    result = numpy.concatenate((result, rotated))
-    rotated = numpy.rot90(rotated, axes=(1, 2))
-    result = numpy.concatenate((result, rotated))
+    # rotated = numpy.rot90(rotated, axes=(1, 2))
+    # # result = numpy.concatenate((result, rotated))
+    # rotated = numpy.rot90(rotated, axes=(1, 2))
+    # result = numpy.concatenate((result, rotated))
 
     rotated = scp.rotate(labels, 45, axes=(1, 2))
-    result = numpy.concatenate((result, rotated[:, 183:383, 183:383]))
+    # print(numpy.abs(numpy.around(rotated[0, 183:383, 183:383])))
+    result = numpy.concatenate((result, numpy.abs(numpy.around(rotated[:, 183:383, 183:383]))))
     rotated = scp.rotate(labels, 135, axes=(1, 2))
-    result = numpy.concatenate((result, rotated[:, 183:383, 183:383]))
+    result = numpy.concatenate((result, numpy.abs(numpy.around(rotated[:, 183:383, 183:383]))))
     rotated = scp.rotate(labels, 225, axes=(1, 2))
-    result = numpy.concatenate((result, rotated[:, 183:383, 183:383]))
+    result = numpy.concatenate((result, numpy.abs(numpy.around(rotated[:, 183:383, 183:383]))))
     rotated = scp.rotate(labels, 315, axes=(1, 2))
-    result = numpy.concatenate((result, rotated[:, 183:383, 183:383]))
-
-    # rotated = scp.rotate(result, 45, axes=(1, 2), mode="reflect")
-    # result = numpy.concatenate((result, rotated[:, 41:241, 41:241]))
-    # rotated = scp.rotate(unrotated, 135, axes=(1, 2), mode="reflect")
-    # result = numpy.concatenate((result, rotated[:, 41:241, 41:241]))
-    # rotated = scp.rotate(unrotated, 225, axes=(1, 2), mode="reflect")
-    # result = numpy.concatenate((result, rotated[:, 41:241, 41:241]))
-    # rotated = scp.rotate(unrotated, 315, axes=(1, 2), mode="reflect")
-    # result = numpy.concatenate((result, rotated[:, 41:241, 41:241]))
+    result = numpy.concatenate((result, numpy.abs(numpy.around(rotated[:, 183:383, 183:383]))))
     print("LABEL SHAPE ", result.shape)
 
-    return result.astype('float32')
+    return result.astype('float64')
 
 def load_test(filename, num_images, input_size, output_size):
     imgs = []
@@ -171,7 +153,7 @@ def load_test(filename, num_images, input_size, output_size):
             imgs.append(img)
         else:
             print('File ' + image_filename + ' does not exist')
-    data = numpy.asarray(imgs).astype('float32')
+    data = numpy.asarray(imgs).astype('float64')
     mean = numpy.mean(data)
     std = numpy.std(data)
     data -= mean

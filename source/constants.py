@@ -10,6 +10,7 @@ NUM_EPOCHS = 100
 RESTORE_MODEL = True  # If True, restore existing model instead of training a new one
 RECORDING_STEP = 0
 PIXEL_THRESHOLD = 0.25
+DROPOUT_PROBABILITY = 0.2
 # Set image patch size in pixels
 # IMG_PATCH_SIZE should be a multiple of 4
 # image size should be an integer multiple of this number!
@@ -17,4 +18,5 @@ IMG_PATCH_SIZE = 16
 TRAIN_DIR = 'data/training/'
 TEST_DIR = 'data/test/'
 SAVE_NETWORK_FILE = 'networks/unet.h5'
+SAVE_NETWORK_FILE_TRAINING = 'networks/unet_training.h5'
 OUTPUT_DIR = 'data/predictions/'
