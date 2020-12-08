@@ -104,7 +104,7 @@ def load_training(filename, num_images):
 
     print("DATA SHAPE ", result.shape)
 
-    return result
+    return result, mean, std
 
 def load_groundtruths(filename, num_images):
     gt_imgs = []
@@ -142,7 +142,7 @@ def load_groundtruths(filename, num_images):
 
     return result.astype('float64')
 
-def load_test(filename, num_images, input_size, output_size):
+def load_test(filename, num_images, input_size, output_size, mean=None, std=None):
     imgs = []
     for i in range(1, num_images + 1):
         imageid = "test_%d/test_%d" % (i, i)
@@ -154,8 +154,12 @@ def load_test(filename, num_images, input_size, output_size):
         else:
             print('File ' + image_filename + ' does not exist')
     data = numpy.asarray(imgs).astype('float64')
-    mean = numpy.mean(data)
-    std = numpy.std(data)
+
+    if mean == None:
+        mean = numpy.mean(data)
+    if std == None:
+        std = numpy.std(data)
+
     data -= mean
     data /= std
 
