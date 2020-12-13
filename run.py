@@ -104,18 +104,18 @@ def train_unet(unet):
     right_margin = int(output_shape[1] + margin)
     train_labels = train_labels[:, margin:right_margin, margin:right_margin]
 
-    unet.fit(train_data, train_labels, epochs=cst.NUM_EPOCHS, validation_split=0.0, batch_size=cst.BATCH_SIZE,
+    history = unet.fit(train_data, train_labels, epochs=cst.NUM_EPOCHS, validation_split=0.0, batch_size=cst.BATCH_SIZE,
              callbacks=[model_checkpoint])
 
     del train_data
     del train_labels
 
-    return mean_train, std_train
+    return mean_train, std_train, history
 
 
 def predict():
     unet = get_unet()
-    mean_train, std_train = train_unet(unet)
+    mean_train, std_train, history = train_unet(unet)
 
     input_size = unet.get_layer("input_layer").input_shape[0][1]
     output_size = unet.get_layer("output_layer").output_shape[1]
@@ -125,7 +125,7 @@ def predict():
     masks = unet.predict(test_data, verbose=1)
     numpy.save("image_mask.npy", masks)
 
-    return masks
+    return masks, history
 
 def generate_masks(masks):
     predictions = []
@@ -153,7 +153,9 @@ def generate_masks(masks):
 
 
 if __name__ == '__main__':
-    generate_masks(predict())
+    
+    masks, history = predict()
+    generate_masks(masks)
 
     submission_filename = 'submit.csv'
     image_filenames = []
