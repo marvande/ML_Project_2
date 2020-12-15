@@ -8,12 +8,18 @@ from GoogleMaps. They also provided ground-truth images where each pixel is labe
 - Vincent TOURNIER
 
 ## Structure of the repository: 
-**complete**
+The dataset is available from the [here](281e7599-7024-4d7e-a95d-e1af53d3e8c0_test_set_images.zip).
+- **source**:
+- **data**:
+  - **predictions**: plots for the report
+  - **test**: test data available [here](281e7599-7024-4d7e-a95d-e1af53d3e8c0_test_set_images.zip)
+  - **train**: training data available [here](281e7599-7024-4d7e-a95d-e1af53d3e8c0_test_set_images.zip)
+- **colab**: folder to run our code on colab, follow instructions in the readme of that folder
+- **doc**: instructions of project
+- `ourmodel.h5`: model loaded in run.py
+- `run.py`: script to load `ourmodel.h5` or train a model and do predictions
 
 ## Instructions to run:
-
-The dataset is available from the 
-[here](281e7599-7024-4d7e-a95d-e1af53d3e8c0_test_set_images.zip).
 
 Python modules requirements: ?
 
