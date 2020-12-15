@@ -1,11 +1,20 @@
+import sys
+import urllib
+import matplotlib.image as mpimg
 from PIL import Image
+import code
+import tensorflow.python.platform
 import numpy
 import tensorflow as tf
 import tensorflow.keras.layers as layers
 import tensorflow.keras.backend as backend
+import tensorflow_addons as tfa
 import source.mask_to_submission as submission_maker
 import source.constants as cst
 import source.images as images
+from tensorflow import keras
+import os
+
 
 def recall(y, predictions):
     true_positives = backend.sum(backend.round(backend.clip(y * predictions, 0, 1)))
@@ -152,15 +161,52 @@ def generate_masks(masks):
         Image.fromarray(images.img_float_to_uint8(mask)).save(cst.OUTPUT_DIR + "mask_%d.png" % ((i / 16) + 1))
 
 
-if __name__ == '__main__':
-    
-    masks, history = predict()
-    generate_masks(masks)
 
-    submission_filename = 'submit.csv'
+def parse_args():
+        """
+        Parse command line flags.
+        :return results: Namespace of the arguments to pass to the main run function.
+        """
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-l', action='store_true', default=True, dest='load', help='Load trained model and predict')
+        parser.add_argument('-t', action='store_true', default=False, dest='train', help='Train model from scratch')
+        parser.add_argument('-s', type=str, dest='subname', default='submission' ,help='submission file name')
+    
+        results = parser.parse_args()
+    
+        return results
+
+
+if __name__ == '__main__':
+    args = parse_args()
+    if args.load:
+        print("Loading model:")
+        unet = keras.models.load_model('ourmodel.h5', custom_objects={'FocalLoss': FocalLoss(alpha=0.75, gamma=5.0), 'f1_metric':f1_metric})
+        print(bcolors.OKGREEN + "[Success]" + bcolors.ENDC + "  Model successfully loaded")
+        train_data_filename = cst.TRAIN_DIR + 'images/'
+        train_labels_filename = cst.TRAIN_DIR + 'groundtruth/' 
+        input_size = unet.get_layer("input_layer").input_shape[0][1]
+        output_size = unet.get_layer("output_layer").output_shape[1]
+        train_data, mean_train, std_train = images.load_training(train_data_filename, cst.TRAINING_SIZE)
+        test_data = images.load_test(cst.TEST_DIR, cst.TEST_SIZE, input_size, output_size, mean_train, std_train)
+        print("Predicting from test images:")
+        masks = unet.predict(test_data, verbose=1)
+        numpy.save("image_mask.npy", masks)
+        generate_masks(masks)
+        print(bcolors.OKGREEN + "[Success]" + bcolors.ENDC + "  Predictions done")
+
+    else:
+        masks, history = predict()
+        generate_masks(masks)
+
+    submission_filename = args.subname
     image_filenames = []
+    
+    print("Creating Submission file")
     for i in range(1, 51):
         image_filename = 'data/predictions/mask_' + '%d' % i + '.png'
         print(image_filename)
         image_filenames.append(image_filename)
     submission_maker.masks_to_submission(submission_filename, *image_filenames)
+    print(bcolors.OKGREEN + "[Success]" + bcolors.ENDC + "  Submission file successfully created")
+    
