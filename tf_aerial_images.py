@@ -25,21 +25,28 @@ import source.constants as cst
 import source.images as images
 
 def recall(y, predictions):
-    true_positives = backend.sum(backend.round(backend.clip(y * predictions, 0, 1)))
-    possible_positives = backend.sum(backend.round(backend.clip(y, 0, 1)))
-    recall = true_positives / (possible_positives + backend.epsilon())
+    selected_positives = backend.sum(backend.round(backend.clip(y * predictions, 0, 1)))
+    all_positives = backend.sum(backend.round(backend.clip(y, 0, 1)))
+    recall = selected_positives / (all_positives + backend.epsilon())
     return recall
 
 def precision(y, predictions):
-    true_positives = backend.sum(backend.round(backend.clip(y * predictions, 0, 1)))
+    selected_positives = backend.sum(backend.round(backend.clip(y * predictions, 0, 1)))
     predicted_positives = backend.sum(backend.round(backend.clip(predictions, 0, 1)))
-    precision = true_positives / (predicted_positives + backend.epsilon())
+    precision = selected_positives / (predicted_positives + backend.epsilon())
     return precision
 
 def f1_metric(y, predictions):
     pre = precision(y, predictions)
     rec = recall(y, predictions)
     return 2 * ((pre * rec) / (pre + rec + backend.epsilon()))
+
+def generate_focal_loss(gamma = 2.0, alpha = 0.25):
+    def focal_loss(y, predictions):
+        cce = tf.keras.losses.categorical_crossentropy(y, predictions)
+        p = tf.math.exp(-cce)
+        return alpha * tf.math.pow(1.0 - p, gamma) * cce
+    return focal_loss
 
 def get_unet():
     inputs = layers.Input((200, 200, 3), name="input_layer")
@@ -81,8 +88,8 @@ def get_unet():
     conv10 = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(drop10)
     conv10 = layers.Conv2D(1, (1, 1), activation='sigmoid', name="output_layer")(conv10)
 
-    unet = tf.keras.Model(inputs=[inputs], outputs=[conv10])
-    unet.compile(optimizer='adam', loss='categorical_crossentropy', metrics=[f1_metric, 'accuracy'])
+    unet = tf.keras.Model(inputs = [inputs], outputs = [conv10])
+    unet.compile(optimizer = 'adam', loss = generate_focal_loss(), metrics = [f1_metric, 'accuracy'])
     return unet
 
 
@@ -92,7 +99,7 @@ def train_unet(unet):
     train_labels_filename = cst.TRAIN_DIR + 'groundtruth/' 
 
     # Extract it into numpy arrays.
-    train_data = images.load_training(train_data_filename, cst.TRAINING_SIZE)
+    (train_data, mean, std) = images.load_training(train_data_filename, cst.TRAINING_SIZE)
     train_labels = images.load_groundtruths(train_labels_filename, cst.TRAINING_SIZE)
 
     print("DATA SHAPE " + str(train_data.shape))
@@ -106,25 +113,31 @@ def train_unet(unet):
     right_margin = int(output_shape[1] + margin)
     train_labels = train_labels[:,margin:right_margin,margin:right_margin]
 
-    unet.fit(train_data, train_labels, epochs=cst.NUM_EPOCHS, validation_split=0.2, batch_size=cst.BATCH_SIZE, callbacks=[model_checkpoint])
+    unet.fit(train_data, train_labels, epochs=cst.NUM_EPOCHS, validation_split=0.05, shuffle=True, batch_size=cst.BATCH_SIZE, callbacks=[model_checkpoint])
     unet.save(cst.SAVE_NETWORK_FILE)
     train_data = None
     train_labels = None
+    return (mean, std)
 
 def predict(train_before = False):
     unet = get_unet()
+    mean = 0.0
+    std = 1.0
     if train_before or not os.path.exists(cst.SAVE_NETWORK_FILE):
-        train_unet(unet)
+        (mean, std) = train_unet(unet)
+        numpy.save("meanstd.npy", numpy.asarray([mean, std]))
     else:
         print("LOADING SAVED WEIGHTS")
         unet.load_weights(cst.SAVE_NETWORK_FILE)
+        stats = numpy.load("meanstd.npy")
+        mean = stats[0]
+        std = stats[1]
 
     input_size = unet.get_layer("input_layer").input_shape[0][1]
     output_size = unet.get_layer("output_layer").output_shape[1]
-    test_data = images.load_test(cst.TEST_DIR, cst.TEST_SIZE, input_size, output_size)
+    test_data = images.load_test(cst.TEST_DIR, cst.TEST_SIZE, input_size, output_size, mean, std)
     
     masks = unet.predict(test_data, verbose=1)
-    numpy.save("image_mask.npy", masks)
 
     return masks
 
@@ -140,7 +153,7 @@ def generate_masks(masks):
         mask_line_4 = numpy.concatenate((masks[i + 12], masks[i + 13], masks[i + 14], masks[i + 15]), axis=1)
         mask = numpy.concatenate((mask_line_1, mask_line_2, mask_line_3, mask_line_4), axis=0)[0:608, 0:608, :]
         mask = mask.reshape((608, 608))
-        mask = numpy.around(mask).astype('float32')
+        mask = numpy.around(mask).astype('float64')
         for k in range(0, 608, 16):
             for l in range(0, 608, 16):
                 patch = mask[k:k + 16, l:l + 16]
