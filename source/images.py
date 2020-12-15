@@ -82,6 +82,7 @@ def load_training(filename, num_images):
     std = numpy.std(data)
     data -= mean
     data /= std
+    
     result = numpy.concatenate((data[:, 0:200, 0:200, :], data[:, 0:200, 200:400, :]))
     result = numpy.concatenate((result, data[:, 200:400, 0:200, :]))
     result = numpy.concatenate((result, data[:, 200:400, 200:400, :]))

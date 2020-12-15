@@ -5,15 +5,15 @@ from PIL import Image
 import code
 import tensorflow.python.platform
 import numpy
+from tensorflow import keras
 import tensorflow as tf
 import tensorflow.keras.layers as layers
 import tensorflow.keras.backend as backend
-import tensorflow_addons as tfa
 import source.mask_to_submission as submission_maker
 import source.constants as cst
 import source.images as images
-from tensorflow import keras
 import os
+import argparse
 
 
 def recall(y, predictions):
@@ -170,7 +170,7 @@ def parse_args():
         parser = argparse.ArgumentParser()
         parser.add_argument('-l', action='store_true', default=True, dest='load', help='Load trained model and predict')
         parser.add_argument('-t', action='store_true', default=False, dest='train', help='Train model from scratch')
-        parser.add_argument('-s', type=str, dest='subname', default='submission' ,help='submission file name')
+        parser.add_argument('-s', type=str, dest='subname', default='submission.csv' ,help='submission file name')
     
         results = parser.parse_args()
     
@@ -182,7 +182,7 @@ if __name__ == '__main__':
     if args.load:
         print("Loading model:")
         unet = keras.models.load_model('ourmodel.h5', custom_objects={'FocalLoss': FocalLoss(alpha=0.75, gamma=5.0), 'f1_metric':f1_metric})
-        print(bcolors.OKGREEN + "[Success]" + bcolors.ENDC + "  Model successfully loaded")
+        print("[Success] Model successfully loaded")
         train_data_filename = cst.TRAIN_DIR + 'images/'
         train_labels_filename = cst.TRAIN_DIR + 'groundtruth/' 
         input_size = unet.get_layer("input_layer").input_shape[0][1]
@@ -193,7 +193,7 @@ if __name__ == '__main__':
         masks = unet.predict(test_data, verbose=1)
         numpy.save("image_mask.npy", masks)
         generate_masks(masks)
-        print(bcolors.OKGREEN + "[Success]" + bcolors.ENDC + "  Predictions done")
+        print("[Success] Predictions done")
 
     else:
         masks, history = predict()
@@ -208,5 +208,5 @@ if __name__ == '__main__':
         print(image_filename)
         image_filenames.append(image_filename)
     submission_maker.masks_to_submission(submission_filename, *image_filenames)
-    print(bcolors.OKGREEN + "[Success]" + bcolors.ENDC + "  Submission file successfully created")
+    print("[Success] Submission file successfully created")
     
