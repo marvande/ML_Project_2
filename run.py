@@ -14,6 +14,7 @@ import source.constants as cst
 import source.images as images
 import os
 import argparse
+import subprocess
 
 
 def recall(y, predictions):
@@ -198,13 +199,22 @@ if __name__ == '__main__':
     else:
         masks, history = predict()
         generate_masks(masks)
+        
+    print("Postprocessing masks")
+    os.chdir(cst.OUTPUT_DIR)
+    subprocess.call(['java', '-jar', 'Light.jar'])
+    os.replace("mask_47.png", "PROCESSED_mask_47.png")
+    os.replace("mask_48.png", "PROCESSED_mask_48.png")
+    os.replace("mask_50.png", "PROCESSED_mask_50.png")
+    os.chdir("../../")
+    print("[Success] Postprocessing done")
 
     submission_filename = args.subname
     image_filenames = []
     
     print("Creating Submission file")
     for i in range(1, 51):
-        image_filename = 'data/predictions/mask_' + '%d' % i + '.png'
+        image_filename = 'data/predictions/PROCESSED_mask_' + '%d' % i + '.png'
         print(image_filename)
         image_filenames.append(image_filename)
     submission_maker.masks_to_submission(submission_filename, *image_filenames)
