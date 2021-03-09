@@ -95,6 +95,13 @@ def get_unet():
 
 
 def train_unet(unet):
+    """
+    Trains the unet given in argument
+    :argument unet: The U-Net to train
+    :return mean_train: The mean of the train set as used for normalisation
+    :return std_train: The standard deviation of the train set as used for normalisation
+    :return history: The history of the training
+    """
     train_data_filename = cst.TRAIN_DIR + 'images/'
     train_labels_filename = cst.TRAIN_DIR + 'groundtruth/'
 
@@ -124,6 +131,11 @@ def train_unet(unet):
 
 
 def predict():
+    """
+    Predicts masks by training a U-Net architecture
+    :return masks: The predictions outputed by the unet
+    :return history: The history of the training
+    """
     unet = get_unet()
     mean_train, std_train, history = train_unet(unet)
 
@@ -138,6 +150,11 @@ def predict():
     return masks, history
 
 def generate_masks(masks):
+    """
+    Generates png masks from the given predictions
+    :argument masks: The predictions outputed by a machine learning model
+    """
+
     predictions = []
     if not os.path.isdir(cst.OUTPUT_DIR):
         os.mkdir(cst.OUTPUT_DIR)
@@ -180,7 +197,7 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    if args.load:
+    if args.load and not args.train:
         print("Loading model:")
         unet = keras.models.load_model('ourmodel.h5', custom_objects={'FocalLoss': FocalLoss(alpha=0.75, gamma=5.0), 'f1_metric':f1_metric})
         print("[Success] Model successfully loaded")
@@ -197,15 +214,17 @@ if __name__ == '__main__':
         print("[Success] Predictions done")
 
     else:
-        masks, history = predict()
+        masks, _ = predict()
         generate_masks(masks)
-        
+
     print("Postprocessing masks")
     os.chdir(cst.OUTPUT_DIR)
-    subprocess.call(['java', '-jar', 'Light.jar'])
+    os.rename('../../source/postprocessing.jar', 'postprocessing.jar')
+    subprocess.call(['java', '-jar', 'postprocessing.jar'])
     os.replace("mask_47.png", "PROCESSED_mask_47.png")
     os.replace("mask_48.png", "PROCESSED_mask_48.png")
     os.replace("mask_50.png", "PROCESSED_mask_50.png")
+    os.rename('postprocessing.jar', '../../source/postprocessing.jar')
     os.chdir("../../")
     print("[Success] Postprocessing done")
 

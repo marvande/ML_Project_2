@@ -14,8 +14,8 @@ def img_float_to_uint8(img):
     rimg = (rimg / numpy.max(rimg) * cst.PIXEL_DEPTH).round().astype(numpy.uint8)
     return rimg
 
-# Assign a label to a patch v
 def value_to_class(v):
+    """Assign a label to a patch v"""
     foreground_threshold = 0.25  # percentage of pixels > 1 required to assign a foreground label to a patch
     df = numpy.sum(v)
     if df > foreground_threshold:  # road
@@ -24,6 +24,7 @@ def value_to_class(v):
         return [1, 0]
 
 def concatenate_images(img, gt_img):
+    """Concatenates an image img with its groundtruth gt_img"""
     n_channels = len(gt_img.shape)
     w = gt_img.shape[0]
     h = gt_img.shape[1]
@@ -40,6 +41,7 @@ def concatenate_images(img, gt_img):
     return cimg
 
 def make_img_overlay(img, predicted_img):
+    """Adds an overlay to img from the prediction predicted_img for visualisation purposes"""
     w = img.shape[0]
     h = img.shape[1]
     color_mask = numpy.zeros((w, h, 3), dtype=numpy.uint8)
@@ -53,6 +55,7 @@ def make_img_overlay(img, predicted_img):
 
     # Extract patches from a given image
 def img_crop(im, w, h):
+    """Crops an image im into patches of dimension w * h"""
     list_patches = []
     imgwidth = im.shape[0]
     imgheight = im.shape[1]
@@ -67,6 +70,14 @@ def img_crop(im, w, h):
     return list_patches
 
 def load_training(filename, num_images):
+    """Loads and pre-processes the training set
+
+    :argument filename: The base name of the files to be used for the training set
+    :argument num_images: The number of images to load into the training set
+    :return result: The loaded training set as a numpy array
+    :return mean: The mean of the train set as used for normalisation
+    :return std: The standard deviation of the train set as used for normalisation
+    """
     imgs = []
     for i in range(1, num_images+1):
         imageid = "satImage_%.3d" % i
@@ -108,6 +119,12 @@ def load_training(filename, num_images):
     return result, mean, std
 
 def load_groundtruths(filename, num_images):
+    """Loads and pre-processes the groundtruths corresponding to the training set
+
+    :argument filename: The base name of the files to be used for the groundtruths corresponding to the training set
+    :argument num_images: The number of images to load as groundtruths
+    :return result: The loaded groundtruths set as a numpy array
+    """
     gt_imgs = []
     for i in range(1, num_images + 1):
         imageid = "satImage_%.3d" % i
@@ -144,6 +161,17 @@ def load_groundtruths(filename, num_images):
     return result.astype('float64')
 
 def load_test(filename, num_images, input_size, output_size, mean=None, std=None):
+    """Loads and pre-processes the test set
+
+    :argument filename: The base name of the files to be used for the test set
+    :argument num_images: The number of images to load as test set
+    :argument input_size: the size to be provided to the input layer of the U-Net
+    :argument output_size: the size to be provided by the output layer of the U-Net
+    :argument mean: The eventual mean of the training set to be used for normalisation; if not provided will use the mean of the test set
+    :argument std: The eventual standard deviation of the training set to be used for normalisation; if not provided will use the standard deviation of the test set
+    :return result: The loaded test set as a numpy array
+    """
+
     imgs = []
     for i in range(1, num_images + 1):
         imageid = "test_%d/test_%d" % (i, i)
