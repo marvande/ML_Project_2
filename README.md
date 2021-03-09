@@ -1,7 +1,6 @@
 # ML project: Road Segmentation 
-Project 2 of the Fall 2020 Machine Learning course. For this choice of project task, they provided a set of satellite images acquired 
-from GoogleMaps. They also provided ground-truth images where each pixel is labeled as road or background. Our task was to train a classifier to segment roads in these images, i.e. assigns a label `road=1, background=0` to each pixel.
-
+Project 2 of the Fall 2020 Machine Learning In the context of the road segmentation challenge proposed in the scope of the Machine Learning course of the
+EPFL on aicorwd.com, our team proposed a deep-learning solution based on a U-Net architecture, considered to be the current state-of-the-art for segmentation problems. By implementing pre and post-processing steps, and using the Adam optimiser with a Focal Loss, we were able to obtain a satisfactory model capable of obtaining a F1-score of 0.886 and accuracy of 0.940 on our test set.
 ## Team Members
 - Marijn VAN DER MEER
 - Léo MEYNENT
