@@ -1,4 +1,4 @@
-# ML_Project_2: Project Road Segmentation
+# ML project: Road Segmentation 
 Project 2 of the Fall 2020 Machine Learning course. For this choice of project task, they provided a set of satellite images acquired 
 from GoogleMaps. They also provided ground-truth images where each pixel is labeled as road or background. Our task was to train a classifier to segment roads in these images, i.e. assigns a label `road=1, background=0` to each pixel.
 
